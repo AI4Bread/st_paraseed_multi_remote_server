@@ -192,17 +192,6 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
         # 同步裁剪图片到 session state
         st.session_state.cropped_images = temp_cropped_images
 
-            # 显示裁剪后的图像
-            # st.image(cropped_image, caption=f"裁剪后的图像 {idx + 1}", use_column_width=True)
-    # # 展示已裁剪的图片
-    # st.write("已保存的裁剪图像:")
-    # if st.session_state.cropped_images:
-    #     for idx, cropped_img_path in enumerate(st.session_state.cropped_images):
-    #         cropped_img = Image.open(cropped_img_path)
-    #         st.image(cropped_img, caption=f"裁剪图像 {idx+1}", use_column_width=True)
-    # else:
-    #     st.write("尚未裁剪图像。")
-
 # 添加 CSS 样式控制
 st.markdown(
     """
@@ -262,6 +251,7 @@ history_display = st.empty()
 # 显示会话历史的函数
 def display_chat_history():
     with history_display.container():
+        history_display.empty()
         for chat in st.session_state.history:
             # 用户问题
             st.markdown(
