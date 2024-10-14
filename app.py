@@ -156,7 +156,7 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
         fill_color="rgba(255, 165, 0, 0.3)",  # 固定填充颜色
         stroke_width=2,
         stroke_color="#000000",
-        background_image=image,
+        background_image=image.convert("RGBA"),  # 确保为RGBA模式
         update_streamlit=True,
         height=image.height,
         width=image.width,
@@ -191,6 +191,11 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
 
         # 同步裁剪图片到 session state
         st.session_state.cropped_images = temp_cropped_images
+
+if 'history' not in st.session_state:
+    st.session_state.history = []  # 初始化 history 为空
+
+
 
 # 添加 CSS 样式控制
 st.markdown(
@@ -251,7 +256,7 @@ history_display = st.empty()
 # 显示会话历史的函数
 def display_chat_history():
     with history_display.container():
-        history_display.empty()
+        #history_display.empty()
         for chat in st.session_state.history:
             # 用户问题
             st.markdown(
@@ -305,12 +310,14 @@ if st.session_state.uploaded_files:
             with st.spinner("模型正在生成回答，请稍候..."):
                 client = ParaSeedMultiClient(base_url='http://101.43.67.130:9001/v1', model="default-lora")
 
-                
-                response, history = client.call_paraseed_multi(
-                    image_paths=images_to_infer,
-                    question=query,
-                    history=st.session_state.model_history
-                )
+                try:
+                    response, history = client.call_paraseed_multi(
+                        image_paths=images_to_infer,
+                        question=query,
+                        history=st.session_state.model_history
+                    )
+                except Exception as e:
+                    st.error(f"发生错误: {str(e)}")
                 
 
                 # 更新会话历史
