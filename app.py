@@ -19,22 +19,16 @@ class ParaSeedMultiClient:
         self.model = model
 
     def encode_image(self, image_path):
-        # 打开图像并调整大小，然后转换为 Base64
         with Image.open(image_path) as img:
-            
             if img.mode == 'RGBA':
                 img = img.convert('RGB')
 
-            # 将图像转换为 Base64 编码
             buffered = BytesIO()
             img.save(buffered, format="JPEG")
             encoded_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
             return f'data:image/jpeg;base64,{encoded_image}'
 
     def call_paraseed_multi(self, image_paths=None, question=None, history=None):
-        
-
-        # 构建消息列表，包括文本和多个图像
         images_content = [{"type": "image_url", "image_url": {"url": self.encode_image(img_path)}}
                           for img_path in image_paths]
 
@@ -43,18 +37,16 @@ class ParaSeedMultiClient:
             "role": "user",
             "content": [
                 {"type": "text", "text": question},
-                *images_content  # 多张图片以列表形式追加
+                *images_content
             ]
         })
 
-        # 调用模型并发送请求
         response = self.client.chat.completions.create(
             model=self.model,
             messages=all_messages,
             seed=42
         )
-        
-        # 返回模型的响应和更新的历史记录
+
         history.append({
             "role": "user",
             "content": question
@@ -63,7 +55,6 @@ class ParaSeedMultiClient:
             "role": "assistant",
             "content": response.choices[0].message.content
         })
-        # 返回模型的响应
         return response.choices[0].message.content, history
 
 # 设置头像图标路径
@@ -98,7 +89,7 @@ if 'history' not in st.session_state:
     st.session_state.model_history = []  # 初始化 history 为空
 
 # 定义一个临时目录用于保存裁剪后的图片
-output_folder = "tmp_cropped_images"
+output_folder = "./tmp_cropped_images"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
@@ -142,21 +133,19 @@ if st.button("进行标注/标注隐藏"):
 
 
 # 展示和标注页面
-if st.session_state.show_annotation and st.session_state.uploaded_files:
+if st.session_state.get('show_annotation') and st.session_state.uploaded_files:
     selected_image = st.selectbox("选择图片进行标注", options=[file.name for file in st.session_state.uploaded_files])
     current_file = next(file for file in st.session_state.uploaded_files if file.name == selected_image)
     image = Image.open(current_file)
 
-    # 在图片上标注区域
     st.write("在图片上框选区域进行裁剪:")
-    # 用于存储当前会话中的裁剪图片路径，便于撤销同步
     temp_cropped_images = []
 
     canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",  # 固定填充颜色
+        fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=2,
         stroke_color="#000000",
-        background_image=image.convert("RGBA"),  # 确保为RGBA模式
+        background_image=image.convert("RGBA"),
         update_streamlit=True,
         height=image.height,
         width=image.width,
@@ -167,7 +156,6 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
     # 裁剪选中的区域并保存为图片
     if canvas_result.json_data is not None:
         shapes = canvas_result.json_data["objects"]
-        # 清空上次的裁剪图片列表
         st.session_state.cropped_images = []
 
         for idx, shape in enumerate(shapes):
@@ -176,21 +164,21 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
             width = int(shape["width"])
             height = int(shape["height"])
 
-            # 裁剪区域并保存到缓存目录
             cropped_image = image.crop((left, top, left + width, top + height))
-
-            # pdb.set_trace()
             if cropped_image.mode == 'RGBA':
                 cropped_image = cropped_image.convert('RGB')
 
             cropped_image_path = os.path.join(output_folder, f"cropped_{selected_image}_{idx}.jpg")
             cropped_image.save(cropped_image_path, format="JPEG")
-
-            # 添加路径到当前会话临时存储
             temp_cropped_images.append(cropped_image_path)
 
-        # 同步裁剪图片到 session state
         st.session_state.cropped_images = temp_cropped_images
+
+# 显示裁剪后的图片
+if st.session_state.cropped_images:
+    st.write("裁剪后的图片：")
+    for img_path in st.session_state.cropped_images:
+        st.image(img_path, caption=os.path.basename(img_path), use_column_width=True)
 
 if 'history' not in st.session_state:
     st.session_state.history = []  # 初始化 history 为空
