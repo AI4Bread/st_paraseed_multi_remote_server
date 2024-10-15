@@ -133,10 +133,15 @@ if st.button("进行标注/标注隐藏"):
 
 
 # 展示和标注页面
-if st.session_state.get('show_annotation') and st.session_state.uploaded_files:
+if st.session_state.show_annotation and st.session_state.uploaded_files:
     selected_image = st.selectbox("选择图片进行标注", options=[file.name for file in st.session_state.uploaded_files])
     current_file = next(file for file in st.session_state.uploaded_files if file.name == selected_image)
-    image = Image.open(current_file)
+
+    try:
+        image = Image.open(current_file)
+    except Exception as e:
+        st.error(f"无法加载图像: {e}")
+
 
     st.write("在图片上框选区域进行裁剪:")
     temp_cropped_images = []
@@ -153,26 +158,29 @@ if st.session_state.get('show_annotation') and st.session_state.uploaded_files:
         key=f"canvas_{selected_image}",
     )
 
-    # 裁剪选中的区域并保存为图片
     if canvas_result.json_data is not None:
         shapes = canvas_result.json_data["objects"]
         st.session_state.cropped_images = []
 
-        for idx, shape in enumerate(shapes):
-            left = int(shape["left"])
-            top = int(shape["top"])
-            width = int(shape["width"])
-            height = int(shape["height"])
+        if shapes:
+            for idx, shape in enumerate(shapes):
+                left = int(shape["left"])
+                top = int(shape["top"])
+                width = int(shape["width"])
+                height = int(shape["height"])
 
-            cropped_image = image.crop((left, top, left + width, top + height))
-            if cropped_image.mode == 'RGBA':
-                cropped_image = cropped_image.convert('RGB')
+                cropped_image = image.crop((left, top, left + width, top + height))
 
-            cropped_image_path = os.path.join(output_folder, f"cropped_{selected_image}_{idx}.jpg")
-            cropped_image.save(cropped_image_path, format="JPEG")
-            temp_cropped_images.append(cropped_image_path)
+                if cropped_image.mode == 'RGBA':
+                    cropped_image = cropped_image.convert('RGB')
 
-        st.session_state.cropped_images = temp_cropped_images
+                cropped_image_path = os.path.join(output_folder, f"cropped_{selected_image}_{idx}.jpg")
+                cropped_image.save(cropped_image_path, format="JPEG")
+                temp_cropped_images.append(cropped_image_path)
+
+            st.session_state.cropped_images = temp_cropped_images
+        else:
+            st.warning("没有选择任何裁剪区域。")
 
 # 显示裁剪后的图片
 if st.session_state.cropped_images:
