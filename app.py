@@ -145,12 +145,11 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
 
     st.write("在图片上框选区域进行裁剪:")
     temp_cropped_images = []
-    st.image(image)
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=2,
         stroke_color="#000000",
-        background_image=image.convert("RGBA"),
+        background_image=Image.open(current_file),
         update_streamlit=True,
         height=image.height,
         width=image.width,
@@ -315,7 +314,7 @@ if st.session_state.uploaded_files:
                     )
                 except Exception as e:
                     st.error(f"发生错误: {str(e)}")
-                
+                    history = None
 
                 # 更新会话历史
                 st.session_state.history[-1]['answer'] = response
