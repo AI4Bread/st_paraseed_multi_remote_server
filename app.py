@@ -145,7 +145,7 @@ if st.session_state.show_annotation and st.session_state.uploaded_files:
 
     st.write("在图片上框选区域进行裁剪:")
     temp_cropped_images = []
-
+    st.image(image)
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=2,
@@ -188,8 +188,7 @@ if st.session_state.cropped_images:
     for img_path in st.session_state.cropped_images:
         st.image(img_path, caption=os.path.basename(img_path), use_column_width=True)
 
-if 'history' not in st.session_state:
-    st.session_state.history = []  # 初始化 history 为空
+
 
 
 
@@ -246,6 +245,8 @@ def image_to_base64(image):
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
     return img_str
 
+if 'history' not in st.session_state:
+    st.session_state.history = []  # 初始化 history 为空
 # 创建聊天记录显示框
 history_display = st.empty()
 
@@ -305,7 +306,7 @@ if st.session_state.uploaded_files:
             #os.environ['CUDA_VISIBLE_DEVICES'] = '0' #'0,1,2,3' #'0'
             with st.spinner("模型正在生成回答，请稍候..."):
                 client = ParaSeedMultiClient(base_url='http://101.43.67.130:9001/v1', model="default-lora")
-
+                response = "发生错误"
                 try:
                     response, history = client.call_paraseed_multi(
                         image_paths=images_to_infer,
